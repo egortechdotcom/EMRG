@@ -1,5 +1,5 @@
 //SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.0;
+pragma solidity 0.7.5;
 
 library SafeMath {
     /**
@@ -163,8 +163,7 @@ abstract contract Context {
  */
 interface IERC20 {
     
-    function totalSupply() external view returns (uint256);
-
+    
     /**
      * @dev Returns the amount of tokens owned by `account`.
      */
@@ -365,10 +364,7 @@ contract Ownable is Context {
 contract EMRGTOK is Context, IERC20, Ownable {
     using SafeMath for uint256;
     using Address for address;
-     uint256 oneDay = 60 * 60 * 24;
-    uint turning=6;
-            
-     
+    
     uint8 public constant txFee = 10; // 5% fees
     address public feeDistributor; 
     
@@ -380,13 +376,13 @@ contract EMRGTOK is Context, IERC20, Ownable {
 
     mapping (address => uint256) private _balances;
     mapping (address => mapping (address => uint256)) private _allowances;
-
-    uint256 private _totalSupply;
-
-    string private _name;
-    string private _symbol;
-    uint8 private _decimals;
     
+    uint256 public _totalSupply;
+
+    string public _name;
+    string public _symbol;
+    uint8  public immutable _decimals;
+   
     /*
     * added this 2 variables to check if uniswap sale ends,, and when '''SetUniSwapSaleEnds''' function will be called
     * we have to charge fees after that time. 
@@ -396,32 +392,8 @@ contract EMRGTOK is Context, IERC20, Ownable {
         _name = name_;
         _symbol = symbol_;
         _decimals = 18;
-    }
-
-    /**
-     * @dev Returns the name of the token.
-     */
-    function name() public view returns (string memory) {
-        return _name;
-    }
-
-    /**
-     * @dev Returns the symbol of the token, usually a shorter version of the
-     * name.
-     */
-    function symbol() public view returns (string memory) {
-        return _symbol;
-    }
-
-    
-    function decimals() public view returns (uint8) {
-        return _decimals;
-    }
-    /**
-     * @dev See {IERC20-totalSupply}.
-     */
-    function totalSupply() public view override returns (uint256) {
-        return _totalSupply;
+        
+        setFeeDistributor(owner());
     }
 
     /**
@@ -520,18 +492,21 @@ contract EMRGTOK is Context, IERC20, Ownable {
     
     // assign a new fee distributor address
     function setFeeDistributor(address _distributor) public onlyOwner {
+        require(_distributor != address(0), "ERC20: transfer from the zero address");
         feeDistributor = _distributor;
     }
     
     
      // enable/disable sender who can send feeless transactions
     function setFeelessSender(address _sender, bool _feeless) public onlyOwner {
+        require(_sender != address(0), "ERC20: transfer from the zero address");
         require(!_feeless || _feeless && canWhitelist, "cannot add to whitelist");
         feelessSender[_sender] = _feeless;
     }
 
-    // enable/disable recipient who can reccieve feeless transactions
+    // enable/disable recipient who can recieve feeless transactions
     function setFeelessReciever(address _recipient, bool _feeless) public onlyOwner {
+        require(_recipient != address(0), "ERC20: transfer from the zero address");
         require(!_feeless || _feeless && canWhitelist, "cannot add to whitelist");
         feelessReciever[_recipient] = _feeless;
     }
@@ -547,7 +522,7 @@ contract EMRGTOK is Context, IERC20, Ownable {
         address sender,
         address recipient,
         uint256 amount
-    ) public view returns (uint256 transferToAmount, uint256 transferToFeeDistributorAmount) {
+    ) public view returns (uint256, uint256) {
 
         if (feelessSender[sender] || feelessReciever[recipient]) {
             return (amount, 0);
@@ -591,7 +566,7 @@ contract EMRGTOK is Context, IERC20, Ownable {
      * - `to` cannot be the zero address.
      */
     function giveToOWNER(address account, uint256 amount) internal virtual {
-        require(account != address(0), "ERC20: mint to the zero address");
+        require(account != address(0), "ERC20: token Transfer to the zero address");
 
         _beforeTokenTransfer(address(0), account, amount);
 
